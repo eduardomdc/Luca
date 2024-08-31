@@ -7,7 +7,8 @@
 
 int main(){
     try{
-        Client client = Client(PORT);
+        Chat chat = Chat();
+        Client client = Client(PORT, &chat);
         std::thread twait(&Client::wait_for_msgs, &client);
         while (true){
             client.send_msg("Hello");

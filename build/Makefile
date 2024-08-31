@@ -129,6 +129,30 @@ chat/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/chat.dir/build.make CMakeFiles/chat.dir/build
 .PHONY : chat/fast
 
+src/chat.o: src/chat.cpp.o
+.PHONY : src/chat.o
+
+# target to build an object file
+src/chat.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chat.dir/build.make CMakeFiles/chat.dir/src/chat.cpp.o
+.PHONY : src/chat.cpp.o
+
+src/chat.i: src/chat.cpp.i
+.PHONY : src/chat.i
+
+# target to preprocess a source file
+src/chat.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chat.dir/build.make CMakeFiles/chat.dir/src/chat.cpp.i
+.PHONY : src/chat.cpp.i
+
+src/chat.s: src/chat.cpp.s
+.PHONY : src/chat.s
+
+# target to generate assembly for a file
+src/chat.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/chat.dir/build.make CMakeFiles/chat.dir/src/chat.cpp.s
+.PHONY : src/chat.cpp.s
+
 src/client.o: src/client.cpp.o
 .PHONY : src/client.o
 
@@ -186,6 +210,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... chat"
+	@echo "... src/chat.o"
+	@echo "... src/chat.i"
+	@echo "... src/chat.s"
 	@echo "... src/client.o"
 	@echo "... src/client.i"
 	@echo "... src/client.s"

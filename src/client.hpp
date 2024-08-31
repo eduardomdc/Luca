@@ -1,11 +1,13 @@
 #ifndef CLIENT
 #define CLIENT
+#include "chat.hpp"
 #include <netinet/in.h>
 #include <string>
 
 class Client {
 public:
-    Client(int port);
+    Client(int port, Chat* chat);
+    Chat* chat;
     void send_msg(std::string msg);
     void wait_for_msgs();
 private:

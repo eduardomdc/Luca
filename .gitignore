@@ -3,4 +3,3 @@
 !*.cpp
 !*.hpp
 !CMakeLists.txt
-!build/Makefile

@@ -8,7 +8,8 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-Client::Client(int port){
+Client::Client(int port, Chat* chat){
+    this->chat = chat;
     // create udp socket
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0){
