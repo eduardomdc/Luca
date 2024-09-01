@@ -1,15 +1,19 @@
 #include "client.hpp"
+#include <cstddef>
 #include <cstring>
 #include <stdexcept>
 #include <sys/poll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+ #include <netdb.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <unistd.h>
 
-Client::Client(int port, Chat* chat){
-    this->chat = chat;
+#define BUFFERSIZE 1024
+
+Client::Client(int port, std::string nickname, Color color){
     // create udp socket
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0){
@@ -44,23 +48,103 @@ Client::Client(int port, Chat* chat){
     if (ret < 0){
         throw std::runtime_error("Socket binding failure");
     }
+
+    // save me value
+    User me_t;
+    me_t.addr = local_addr.sin_addr;
+    me_t.color = color;
+    me_t.nickname = nickname;
+    this->me = me_t;
+    this->users.push_back(this->me);
+    
+    char hostbuffer[256];
+    struct hostent *host_entry;
+    int hostname;
+    struct in_addr **addr_list;
+ 
+    // retrieve hostname
+    hostname = gethostname(hostbuffer, sizeof(hostbuffer));
+    if (hostname == -1) {
+        perror("gethostname error");
+        exit(1);
+    }
+    printf("Hostname: %s\n", hostbuffer);
+ 
+    // Retrieve IP addresses
+    host_entry = gethostbyname(hostbuffer);
+    if (host_entry == NULL) {
+        perror("gethostbyname error");
+        exit(1);
+    }
+    addr_list = (struct in_addr **)host_entry->h_addr_list;
+    for (int i = 0; addr_list[i] != NULL; i++) {
+        printf("IP address %d: %s\n", i+1, inet_ntoa(*addr_list[i]));
+    }
 }
 
 void Client::send_msg(std::string msg){
+    char* msg_data = msg.data();
+    // serialize header and msg to buffer
+    size_t buf_size = msg.size()+sizeof(Header);
+    unsigned char* _buf = (unsigned char*) malloc(buf_size);
+    memset(_buf, MSG, sizeof(Header));
+    memcpy(&_buf[sizeof(Header)], msg_data, msg.size());
+
     int ret = sendto(sock, 
-            msg.data(), 
-            msg.length(), 
+            _buf,
+            buf_size,
             0, 
             (struct sockaddr*) &broadcast_addr, 
             sizeof(broadcast_addr));
     if (ret < 0){
         throw std::runtime_error("Message not sent");
     }
+    free(_buf);
+}
+
+void Client::greet(){
+    /* Greetings packages follow the format: 
+        /1b   /1b   /x bytes
+        /GREET/COLOR/NICKNAME
+    */
+    size_t buf_size = sizeof(Header)+sizeof(Color)+me.nickname.size();
+    unsigned char* _buf = (unsigned char*) malloc(buf_size);
+    
+    free(_buf);
+}
+
+User Client::lookup_user(in_addr addr){
+    User user;
+    for (int i=0; i < this->users.size(); i++){
+        long it = users[i].addr.s_addr;
+        if (addr.s_addr == it){
+            return users[i];
+        }
+    }
+    return {{addr}, "Unknown User", RED};
+}
+
+void Client::read_msg(char buffer[], in_addr addr){
+    User usr = this->lookup_user(addr);
+    switch (buffer[0]){
+        case MSG:
+            printf("%s: %s\n", usr.nickname.data(), buffer+sizeof(Header));
+            break;
+        case GREET:
+            break;
+        case WELCOME:
+            break;
+        case FAREWELL:
+            break;
+        default:
+            // msg not understood, ignore it.
+            break;
+    }
 }
 
 void Client::wait_for_msgs(){
     // this thread will keep still to wait for msgs
-    char buffer[1024];
+    char buffer[BUFFERSIZE];
     memset((void*) buffer, 0, sizeof(buffer));
     struct sockaddr_in sender_addr;
     socklen_t sender_addr_len;
@@ -73,8 +157,8 @@ void Client::wait_for_msgs(){
         memset((void*) buffer, 0, sizeof(buffer));
         if (ret > 0){
             if (fds[0].revents & POLLIN){
-                recvfrom(sock, buffer, 1024, 0, (struct sockaddr*)&sender_addr, &sender_addr_len);
-                printf("(%s): %s\n", inet_ntoa(sender_addr.sin_addr), buffer);
+                recvfrom(sock, buffer, BUFFERSIZE, 0, (struct sockaddr*)&sender_addr, &sender_addr_len);
+                this->read_msg(buffer, sender_addr.sin_addr);
             }
         }
     }

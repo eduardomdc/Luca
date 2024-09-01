@@ -7,8 +7,7 @@
 
 int main(){
     try{
-        Chat chat = Chat();
-        Client client = Client(PORT, &chat);
+        Client client = Client(PORT, "Piccard", STANDARD);
         std::thread twait(&Client::wait_for_msgs, &client);
         while (true){
             client.send_msg("Hello");
