@@ -12,6 +12,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <time.h>
+#include <chrono>
+#include <ncurses.h>
 
 #define BUFFERSIZE 1024
 
@@ -166,13 +168,20 @@ void Client::read_msg(char buffer[], in_addr addr){
     int yourself = 0;
     if (addr.s_addr == me.addr.s_addr) yourself = 1;
     Lookup lookup = this->lookup_user(addr);
+    Msg msg;
     switch (buffer[0]){
         case FIND:
             // ignore find requests, see find_my_ip()
             break;
         case MSG:
-            printf("%s: %s\n", lookup.user.nickname.data(), buffer+sizeof(Header));
-            break;
+            if (lookup.found){
+                printw("%s: %s\n", lookup.user.nickname.data(), buffer+sizeof(Header));
+                msg.author = lookup.user;
+                msg.text = buffer+sizeof(Header);
+                msg.time = std::chrono::system_clock::now();
+                msgs.push_back(msg);
+                break;
+            }
         case GREET:
             // reply with welcome, add to known users
             if (!yourself){

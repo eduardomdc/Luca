@@ -1,5 +1,6 @@
 #ifndef CLIENT
 #define CLIENT
+#include <chrono>
 #include <netinet/in.h>
 #include <string>
 #include <vector>
@@ -31,9 +32,9 @@ struct Lookup {
 } typedef Lookup;
 
 struct Msg {
-    User* author;
+    User author;
     std::string text;
-    timespec time;
+    std::chrono::time_point<std::chrono::system_clock> time;
 }typedef Msg;
 
 class Client {
