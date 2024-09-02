@@ -4,6 +4,7 @@
 #include <csignal>
 #include <ncurses.h>
 #include "client.hpp"
+#include "interface.hpp"
 
 #define PORT 8000
 
@@ -17,8 +18,7 @@ void handle_sigint(int signal){
 
 int main(){
     try{
-        initscr();
-        refresh();
+        Interface interface = Interface(&client);
         std::signal(SIGINT, handle_sigint);
         std::thread twait(&Client::wait_for_msgs, &client);
         while (true){
