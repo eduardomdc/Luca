@@ -14,6 +14,8 @@
 #include <time.h>
 #include <chrono>
 #include <ncurses.h>
+#include "interface.hpp"
+#include <format>
 
 #define BUFFERSIZE 1024
 
@@ -151,6 +153,7 @@ User Client::add_user(char greet[], in_addr addr){
     usr.nickname.assign(greet+sizeof(Header)+sizeof(Color));
     usr.addr = addr;
     this->users.push_back(usr);
+    this->interface->draw_users_pane();
     return usr;
 }
 
@@ -175,11 +178,12 @@ void Client::read_msg(char buffer[], in_addr addr){
             break;
         case MSG:
             if (lookup.found){
-                printw("%s: %s\n", lookup.user.nickname.data(), buffer+sizeof(Header));
+                //printw("%s: %s\n", lookup.user.nickname.data(), buffer+sizeof(Header));
                 msg.author = lookup.user;
-                msg.text = buffer+sizeof(Header);
+                msg.text = lookup.user.nickname + ": " + (buffer+sizeof(Header));
                 msg.time = std::chrono::system_clock::now();
                 msgs.push_back(msg);
+                interface->draw_chat_pane();
                 break;
             }
         case GREET:
@@ -188,7 +192,12 @@ void Client::read_msg(char buffer[], in_addr addr){
                 this->welcome();
                 if (!lookup.found){
                     lookup.user = this->add_user(buffer, addr);
-                    printf("%s joined the chat.\n", lookup.user.nickname.data());
+                    //printf("%s joined the chat.\n", lookup.user.nickname.data());
+                    msg.author = lookup.user;
+                    msg.text = lookup.user.nickname + " joined the chat.";
+                    msg.time = std::chrono::system_clock::now();
+                    msgs.push_back(msg);
+                    interface->draw_chat_pane();
                 }
             }
             break;
@@ -204,7 +213,11 @@ void Client::read_msg(char buffer[], in_addr addr){
             if (!yourself){
                 if (lookup.found){
                     this->remove_user(addr);
-                    printf("%s left.\n", lookup.user.nickname.data());
+                    msg.author = lookup.user;
+                    msg.text = lookup.user.nickname + " left.";
+                    msg.time = std::chrono::system_clock::now();
+                    msgs.push_back(msg);
+                    interface->draw_chat_pane();
                 }
             }
             break;

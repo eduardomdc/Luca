@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+class Interface;
+
 enum Color : char {
     STANDARD,
     WHITE,
@@ -50,13 +52,14 @@ public:
     Lookup lookup_user(in_addr addr);
     User add_user(char greet[], in_addr addr);
     void remove_user(in_addr addr);
+    User me;
+    std::vector<User> users;
+    std::vector<Msg> msgs;
+    Interface* interface;
 private:
     int sock;
     struct sockaddr_in broadcast_addr;
     struct sockaddr_in local_addr;
-    User me;
-    std::vector<User> users;
-    std::vector<Msg> msgs;
 };
 
 #endif

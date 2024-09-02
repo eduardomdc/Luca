@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <thread>
 #include <unistd.h>
 #include <csignal>
@@ -19,12 +20,14 @@ void handle_sigint(int signal){
 int main(){
     try{
         Interface interface = Interface(&client);
+        client.interface = &interface;
         std::signal(SIGINT, handle_sigint);
         std::thread twait(&Client::wait_for_msgs, &client);
+        int i = 0;
         while (true){
-            sleep(2);
-            client.send_msg("Tea. Earl Grey. Hot.");
-            refresh();
+            sleep(1);
+            client.send_msg("I want "+std::to_string(i)+" tea. Earl Grey. Hot.");
+            i++;
         }
         endwin();
         twait.detach();
