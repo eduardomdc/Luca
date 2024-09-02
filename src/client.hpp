@@ -12,7 +12,8 @@ enum Color : char {
 };
 
 enum Header : char {
-    MSG=1,
+    FIND,
+    MSG,
     GREET,
     WELCOME,
     FAREWELL,
@@ -24,6 +25,11 @@ struct User {
     Color color;
 }typedef User;
 
+struct Lookup {
+    bool found;
+    User user;
+} typedef Lookup;
+
 struct Msg {
     User* author;
     std::string text;
@@ -32,14 +38,17 @@ struct Msg {
 
 class Client {
 public:
-    Client(int port, std::string Nickname, Color color);
+    Client(int port, std::string nickname, Color color);
     void send_msg(std::string msg);
     void read_msg(char data[], in_addr addr);
+    in_addr find_my_ip(); // find your own ip
     void wait_for_msgs();
     void greet(); // user joins chat
-    void welcome(); // user sends his username/ip
+    void welcome(); // user replies greet
     void farewell(); // user leaves
-    User lookup_user(in_addr addr);
+    Lookup lookup_user(in_addr addr);
+    User add_user(char greet[], in_addr addr);
+    void remove_user(in_addr addr);
 private:
     int sock;
     struct sockaddr_in broadcast_addr;

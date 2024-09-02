@@ -16,6 +16,7 @@ int main(){
             sleep(1);
         }
         twait.detach();
+        client.farewell();
     } catch (std::exception& e){
         std::cerr << e.what();
         perror(" :");

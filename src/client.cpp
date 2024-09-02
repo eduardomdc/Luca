@@ -1,15 +1,17 @@
 #include "client.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <cstring>
 #include <stdexcept>
 #include <sys/poll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
- #include <netdb.h>
+#include <netdb.h>
 #include <arpa/inet.h>
 #include <poll.h>
 #include <unistd.h>
+#include <time.h>
 
 #define BUFFERSIZE 1024
 
@@ -49,22 +51,20 @@ Client::Client(int port, std::string nickname, Color color){
         throw std::runtime_error("Socket binding failure");
     }
 
-    // save me value
-    User me_t;
-    me_t.addr = local_addr.sin_addr;
-    me_t.color = color;
-    me_t.nickname = nickname;
-    this->me = me_t;
-    this->users.push_back(this->me);
+    this->me.addr = find_my_ip();
+    this->me.color = color;
+    this->me.nickname = nickname;
+    users.push_back(this->me);
+    this->greet();
 }
 
 void Client::send_msg(std::string msg){
     char* msg_data = msg.data();
     // serialize header and msg to buffer
     size_t buf_size = msg.size()+sizeof(Header);
-    unsigned char* _buf = (unsigned char*) malloc(buf_size);
+    unsigned char _buf[buf_size];
     memset(_buf, MSG, sizeof(Header));
-    memcpy(&_buf[sizeof(Header)], msg_data, msg.size());
+    memcpy(_buf+sizeof(Header), msg_data, msg.size());
 
     int ret = sendto(sock, 
             _buf,
@@ -75,42 +75,129 @@ void Client::send_msg(std::string msg){
     if (ret < 0){
         throw std::runtime_error("Message not sent");
     }
-    free(_buf);
 }
 
 void Client::greet(){
     /* Greetings packages follow the format: 
         /1b   /1b   /x bytes
-        /GREET/COLOR/NICKNAME
-    */
+        /GREET/COLOR/NICKNAME */
     size_t buf_size = sizeof(Header)+sizeof(Color)+me.nickname.size();
-    unsigned char* _buf = (unsigned char*) malloc(buf_size);
-    
-    free(_buf);
+    unsigned char _buf[buf_size];
+    memset(_buf, GREET, sizeof(Header));
+    memset(_buf+sizeof(Header), me.color, sizeof(Color));
+    memcpy(_buf+sizeof(Header)+sizeof(Color), me.nickname.data(), me.nickname.size());
+    int ret = sendto(sock, 
+            _buf,
+            buf_size,
+            0, 
+            (struct sockaddr*) &broadcast_addr, 
+            sizeof(broadcast_addr));
+    if (ret < 0){
+        throw std::runtime_error("Message not sent");
+    }
 }
 
-User Client::lookup_user(in_addr addr){
-    User user;
+void Client::welcome(){
+    // same as greet package but different header value
+    size_t buf_size = sizeof(Header)+sizeof(Color)+me.nickname.size();
+    unsigned char _buf[buf_size];
+    memset(_buf, WELCOME, sizeof(Header));
+    memset(_buf+sizeof(Header), me.color, sizeof(Color));
+    memcpy(_buf+sizeof(Header)+sizeof(Color), me.nickname.data(), me.nickname.size());
+    int ret = sendto(sock, 
+            _buf,
+            buf_size,
+            0, 
+            (struct sockaddr*) &broadcast_addr, 
+            sizeof(broadcast_addr));
+    if (ret < 0){
+        throw std::runtime_error("Message not sent");
+    }
+}
+
+void Client::farewell(){
+    char bye[9] = "Goodbye!";
+    size_t buf_size = sizeof(Header)+sizeof(bye);
+    unsigned char _buf[buf_size];
+    memset(_buf, FAREWELL, sizeof(Header));
+    memcpy(_buf+sizeof(Header), bye, sizeof(bye));
+    int ret = sendto(sock, 
+            _buf,
+            buf_size,
+            0, 
+            (struct sockaddr*) &broadcast_addr, 
+            sizeof(broadcast_addr));
+    if (ret < 0){
+        throw std::runtime_error("Message not sent");
+    }
+}
+
+Lookup Client::lookup_user(in_addr addr){
+    Lookup lookup;
     for (int i=0; i < this->users.size(); i++){
         long it = users[i].addr.s_addr;
         if (addr.s_addr == it){
-            return users[i];
+            return {true, users[i]};
         }
     }
-    return {{addr}, "Unknown User", RED};
+    return {false, {{addr}, "Unknown User", RED}};
+}
+
+User Client::add_user(char greet[], in_addr addr){
+    User usr;
+    memcpy(&usr.color, greet+sizeof(Header), sizeof(Color));
+    usr.nickname.assign(greet+sizeof(Header)+sizeof(Color));
+    usr.addr = addr;
+    this->users.push_back(usr);
+    return usr;
+}
+
+void Client::remove_user(in_addr addr){
+    for (auto it = users.begin(); it != users.end();){
+        if (it->addr.s_addr == addr.s_addr) {
+            it = users.erase(it);
+        } else {
+            it++;
+        }
+    }
 }
 
 void Client::read_msg(char buffer[], in_addr addr){
-    User usr = this->lookup_user(addr);
+    int yourself = 0;
+    if (addr.s_addr == me.addr.s_addr) yourself = 1;
+    Lookup lookup = this->lookup_user(addr);
     switch (buffer[0]){
+        case FIND:
+            // ignore find requests, see find_my_ip()
+            break;
         case MSG:
-            printf("%s: %s\n", usr.nickname.data(), buffer+sizeof(Header));
+            printf("%s: %s\n", lookup.user.nickname.data(), buffer+sizeof(Header));
             break;
         case GREET:
+            // reply with welcome, add to known users
+            if (!yourself){
+                this->welcome();
+                if (!lookup.found){
+                    lookup.user = this->add_user(buffer, addr);
+                    printf("%s joined the chat.\n", lookup.user.nickname.data());
+                }
+            }
             break;
         case WELCOME:
+            // add to known users
+            if (!yourself){
+                if (!lookup.found){
+                    lookup.user = this->add_user(buffer, addr);
+                }
+            }
             break;
         case FAREWELL:
+            if (!yourself){
+                if (lookup.found){
+                    this->remove_user(addr);
+                    printf("%s left.\n", lookup.user.nickname.data());
+                }
+            }
             break;
         default:
             // msg not understood, ignore it.
@@ -123,7 +210,7 @@ void Client::wait_for_msgs(){
     char buffer[BUFFERSIZE];
     memset((void*) buffer, 0, sizeof(buffer));
     struct sockaddr_in sender_addr;
-    socklen_t sender_addr_len;
+    socklen_t sender_addr_len = sizeof(sender_addr);
     struct pollfd fds[1];
     fds[0].fd = sock;
     fds[0].events = POLLIN;
@@ -138,4 +225,58 @@ void Client::wait_for_msgs(){
             }
         }
     }
+}
+
+in_addr Client::find_my_ip(){
+    // broadcast random int key and wait 
+    // for reply with the key content match
+    // then return key sender ip
+
+    // generate random key
+    srand(time(NULL));
+    int key = rand();
+    size_t key_size = sizeof(Header)+sizeof(key);
+    char key_sent[key_size];
+    memset(key_sent, FIND, sizeof(Header));
+    memcpy(&key_sent[sizeof(Header)], &key, sizeof(key));
+    
+    char answer[key_size];
+    memset((void*) answer, 0, sizeof(answer));
+
+    struct sockaddr_in sender_addr;
+    socklen_t sender_addr_len = sizeof(sender_addr);
+    struct pollfd fds[1];
+    fds[0].fd = sock;
+    fds[0].events = POLLIN;
+
+    int attempts = 0;
+    const int max_attempts = 100;
+    while (attempts < max_attempts){
+        // send key
+        int ret = sendto(sock, 
+                key_sent,
+                key_size,
+                0, 
+                (struct sockaddr*) &broadcast_addr, 
+                sizeof(broadcast_addr));
+        if (ret < 0){
+            throw std::runtime_error("Message not sent");
+        }
+        // poll for answers
+        ret = poll(fds, 1, 5000);
+        memset((void*) answer, 0, sizeof(answer));
+        if (ret > 0){
+            if (fds[0].revents & POLLIN){
+                recvfrom(sock, answer, key_size, 0, (struct sockaddr*)&sender_addr, &sender_addr_len);
+                // check if answer is key
+                if (memcmp(answer, key_sent, key_size) == 0){
+                    // key found, return sender ip
+                    return sender_addr.sin_addr;
+                }
+                // key not found, repeat
+            }
+        }
+        attempts++;
+    }
+    throw std::runtime_error("Could not find my ip address");
 }
