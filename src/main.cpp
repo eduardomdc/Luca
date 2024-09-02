@@ -1,19 +1,25 @@
 #include <iostream>
 #include <thread>
 #include <unistd.h>
+#include <csignal>
 #include "client.hpp"
 
 #define PORT 8000
 
+Client client = Client(PORT, "Piccard", STANDARD);
+
+void handle_sigint(int signal){
+    client.farewell();
+    std::exit(signal);
+}
+
 int main(){
     try{
-        Client client = Client(PORT, "Piccard", STANDARD);
+        std::signal(SIGINT, handle_sigint);
         std::thread twait(&Client::wait_for_msgs, &client);
         while (true){
-            client.send_msg("Hello");
-            sleep(1);
-            client.send_msg("Hello2");
-            sleep(1);
+            sleep(2);
+            client.send_msg("Tea. Earl Grey. Hot.");
         }
         twait.detach();
         client.farewell();
