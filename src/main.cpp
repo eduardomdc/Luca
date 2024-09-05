@@ -28,6 +28,7 @@ int main(){
             sleep(1);
             client.send_msg("I want "+std::to_string(i)+" tea. Earl Grey. Hot.");
             i++;
+            //interface.update();
         }
         endwin();
         twait.detach();

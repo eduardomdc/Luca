@@ -5,10 +5,22 @@ Interface::Interface(Client* client){
     this->client = client;
     noecho();
     raw();
+    cbreak();
     initscr();
     keypad(stdscr, TRUE);
     curs_set(0);
+    chat.win = nullptr; textbox.win = nullptr; online_users.win = nullptr;
+    if (has_colors()){
+        //start_color();
+    }
     fix_pane_sizes();
+}
+
+void Interface::update(){
+    wnoutrefresh(chat.win);
+    wnoutrefresh(textbox.win);
+    wnoutrefresh(online_users.win);
+    doupdate();
 }
 
 WINDOW* new_pane_window(Pane pane){
@@ -50,8 +62,14 @@ void Interface::fix_pane_sizes(){
     draw_chat_pane();
 }
 
+void entitle_pane(Pane pane, const char* title){
+    std::string titlestr = title;
+    mvwaddstr(pane.win, 0, (pane.width-titlestr.length())/2, titlestr.data());
+}
+
 void Interface::draw_chat_pane(){
     int line = chat.height-2;
+    entitle_pane(chat, "chat");
     for (int i=client->msgs.size()-1; i >= 1; i--){
         mvwaddstr(chat.win, line, 1,client->msgs[i].text.data());
         line--;
@@ -62,8 +80,9 @@ void Interface::draw_chat_pane(){
 
 void Interface::draw_users_pane(){
     int line = 1;
+    entitle_pane(online_users, "online_users");
     for (int i=0; i < client->users.size(); i++){
-        mvwaddstr(online_users.win, line, 1, ("[ON] "+client->users[i].nickname).data());
+        mvwaddstr(online_users.win, line, 1, (client->users[i].nickname).data());
         line++;
     }
     wrefresh(online_users.win);

@@ -14,6 +14,7 @@ struct Pane {
 class Interface {
 public:
     Interface(Client* client);
+    void update();
     void fix_pane_sizes();
     void draw_chat_pane();
     void draw_users_pane();

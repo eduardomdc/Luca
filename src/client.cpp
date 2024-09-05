@@ -15,7 +15,6 @@
 #include <chrono>
 #include <ncurses.h>
 #include "interface.hpp"
-#include <format>
 
 #define BUFFERSIZE 1024
 
