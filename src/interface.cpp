@@ -86,7 +86,7 @@ void entitle_pane(Pane pane, const char* title){
 void Interface::draw_chat_pane(){
     werase(chat.win);
     int line = chat.height-2;
-    for (int i=client->msgs.size()-1; i >= 1; i--){
+    for (int i=client->msgs.size()-1; i >= 0; i--){
         mvwaddstr(chat.win, line, 1,client->msgs[i].text.data());
         line--;
         if (line == 0) break;
