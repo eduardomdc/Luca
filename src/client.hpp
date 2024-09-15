@@ -8,10 +8,15 @@
 class Interface;
 
 enum Color : char {
-    STANDARD,
-    WHITE,
+    STANDARD = -1,
+    BLACK, 
     RED,
-    ORANGE
+    GREEN,
+    YELLOW, 
+    BLUE, 
+    MAGENTA,
+    CYAN,
+    WHITE
 };
 
 enum Header : char {

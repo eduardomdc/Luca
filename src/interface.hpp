@@ -5,7 +5,8 @@
 #include <string>
 
 struct Pane {
-    WINDOW* win;
+    WINDOW* win; // window with borders
+    WINDOW* textwin; // text subwindow
     int width;
     int height;
     int posx;
@@ -21,6 +22,7 @@ public:
     void draw_users_pane();
     void draw_textbox_pane();
     void handle_input();
+    void setup_colors();
 private:
     Client* client;
     Pane chat;

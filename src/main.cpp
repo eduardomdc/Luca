@@ -9,7 +9,7 @@
 
 #define PORT 8000
 
-Client client = Client(PORT, "Ryker", STANDARD);
+Client client = Client(PORT, "Ryker", GREEN);
 
 void handle_sigint(int signal){
     client.farewell();
