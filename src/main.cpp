@@ -20,9 +20,15 @@ void handle_sigint(int signal){
     std::exit(signal);
 }
 
-int main(){
+int main(int argc, char** argv){
     try{
-        Client client = Client(PORT, "Scorpion", YELLOW);
+        if (argc < 2 || argc > 3){
+            printf("Usage: %s <nickname>\n", argv[0]);
+            return -1;
+        }
+        char* nickname = argv[1];
+        srand(time(NULL));
+        Client client = Client(PORT, nickname, Color(rand()%WHITE+1));
         Interface interface = Interface();
         interface.client = &client;
         client.interface = &interface;
