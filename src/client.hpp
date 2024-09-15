@@ -7,7 +7,7 @@
 
 class Interface;
 
-enum Color : char {
+enum Color : signed char {
     STANDARD = -1,
     BLACK, 
     RED,
