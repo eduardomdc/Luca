@@ -11,7 +11,6 @@ Interface::Interface(){
     curs_set(0);
     keypad(stdscr, TRUE);
     timeout(10);
-    setlocale(LC_ALL, "");
     chat.win = nullptr; textbox.win = nullptr; online_users.win = nullptr;
     if (has_colors()){
         start_color();
