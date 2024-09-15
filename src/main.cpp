@@ -9,17 +9,22 @@
 
 #define PORT 8000
 
-Client client = Client(PORT, "Subzero", BLUE);
+
+Client* client = nullptr;
 
 void handle_sigint(int signal){
-    client.farewell();
+    if (client != nullptr){
+        client->farewell();
+    }
     endwin();
     std::exit(signal);
 }
 
 int main(){
     try{
-        Interface interface = Interface(&client);
+        Client client = Client(PORT, "Scorpion", YELLOW);
+        Interface interface = Interface();
+        interface.client = &client;
         client.interface = &interface;
         std::signal(SIGINT, handle_sigint);
         std::thread twait(&Client::wait_for_msgs, &client);

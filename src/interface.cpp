@@ -1,18 +1,17 @@
 #include "interface.hpp"
 #include "client.hpp"
-#include <charconv>
 #include <ncurses.h>
 #include <string>
 #include <stdlib.h>
 
-Interface::Interface(Client* client){
-    this->client = client;
+Interface::Interface(){
     initscr();
     cbreak();
     noecho();
     curs_set(0);
     keypad(stdscr, TRUE);
     timeout(10);
+    setlocale(LC_ALL, "");
     chat.win = nullptr; textbox.win = nullptr; online_users.win = nullptr;
     if (has_colors()){
         start_color();
@@ -23,10 +22,16 @@ Interface::Interface(Client* client){
 }
 
 void Interface::setup_colors(){
-    for(short color=STANDARD; color <= WHITE; color++){
-        init_pair(color, color, STANDARD);
-    }
-    //init_pair(RED, COLOR_RED, COLOR_BLACK);
+    init_pair(STANDARD, STANDARD, STANDARD);
+    init_pair(BLACK, COLOR_BLACK, -1);
+    init_pair(RED, COLOR_RED, -1);
+    init_pair(GREEN, COLOR_GREEN, -1);
+    init_pair(YELLOW, COLOR_YELLOW, -1);
+    init_pair(BLUE, COLOR_BLUE, -1);
+    init_pair(MAGENTA, COLOR_MAGENTA, -1);
+    init_pair(CYAN, COLOR_CYAN, -1);
+    init_pair(WHITE, COLOR_WHITE, -1);
+    init_pair(TOOLTIP, COLOR_BLACK, COLOR_WHITE);
 }
 
 void Interface::render(){
@@ -41,6 +46,8 @@ void Interface::handle_input(){
         type(ch);
     } else if (ch == '\n' && typed.size() > 0){
         send_typed();
+    } else if (ch == KEY_BACKSPACE){
+        backspace_typed();
     }
 }
 
@@ -52,6 +59,11 @@ void Interface::type(int ch){
 void Interface::send_typed(){
     client->send_msg(typed);
     typed.clear();
+}
+
+void Interface::backspace_typed(){
+    if (typed.length() > 0)
+        typed.pop_back();
 }
 
 void new_pane_window(Pane* pane){
@@ -113,8 +125,13 @@ void Interface::draw_chat_pane(){
 
 void Interface::draw_textbox_pane(){
     werase(textbox.win);
+    wattron(textbox.textwin, A_DIM);
+    mvwaddstr(textbox.textwin, 0, 0, " Type your message");
+    wattroff(textbox.textwin, A_DIM);
     mvwaddstr(textbox.textwin, 0, 0, typed.data());
-    waddch(textbox.textwin, '|');
+    wattron(textbox.textwin, COLOR_PAIR(TOOLTIP));
+    waddch(textbox.textwin, ' ');
+    wattroff(textbox.textwin, COLOR_PAIR(TOOLTIP));
     box(textbox.win, 0, 0);
     wrefresh(textbox.win);
 }

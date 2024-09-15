@@ -15,7 +15,7 @@ struct Pane {
 
 class Interface {
 public:
-    Interface(Client* client);
+    Interface();
     void render();
     void fix_pane_sizes();
     void draw_chat_pane();
@@ -23,13 +23,14 @@ public:
     void draw_textbox_pane();
     void handle_input();
     void setup_colors();
-private:
     Client* client;
+private:
     Pane chat;
     Pane textbox;
     Pane online_users;
     void type(int ch);
     void send_typed();
+    void backspace_typed();
     std::string typed;
 };
 
