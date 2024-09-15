@@ -25,10 +25,8 @@ int main(){
         std::thread twait(&Client::wait_for_msgs, &client);
         int i = 0;
         while (true){
-            sleep(1);
-            client.send_msg("I want "+std::to_string(i)+" tea. Earl Grey. Hot.");
-            i++;
-            //interface.update();
+            interface.handle_input();
+            interface.render();
         }
         endwin();
         twait.detach();

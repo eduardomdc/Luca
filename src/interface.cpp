@@ -1,14 +1,16 @@
 #include "interface.hpp"
 #include <ncurses.h>
+#include <string>
+#include <stdlib.h>
 
 Interface::Interface(Client* client){
     this->client = client;
-    noecho();
-    raw();
-    cbreak();
     initscr();
-    keypad(stdscr, TRUE);
+    cbreak();
+    noecho();
     curs_set(0);
+    keypad(stdscr, TRUE);
+    timeout(10);
     chat.win = nullptr; textbox.win = nullptr; online_users.win = nullptr;
     if (has_colors()){
         //start_color();
@@ -16,32 +18,49 @@ Interface::Interface(Client* client){
     fix_pane_sizes();
 }
 
-void Interface::update(){
-    wnoutrefresh(chat.win);
-    wnoutrefresh(textbox.win);
-    wnoutrefresh(online_users.win);
-    doupdate();
+void Interface::render(){
+    draw_users_pane();
+    draw_chat_pane();
+    draw_textbox_pane();
+}
+
+void Interface::handle_input(){
+    int ch = getch();
+    if (ch >= 32 && ch <= 126){
+        type(ch);
+    } else if (ch == '\n'){
+        send_typed();
+    }
+}
+
+void Interface::type(int ch){
+    std::string new_ch(1, char(ch));
+    typed.append(new_ch);
+}
+
+void Interface::send_typed(){
+    client->send_msg(typed);
+    typed.clear();
+    //draw_chat_pane();
 }
 
 WINDOW* new_pane_window(Pane pane){
     WINDOW* win = newwin(pane.height, pane.width, pane.posy, pane.posx);
-    box(win, 0, 0);
-    wrefresh(win);
     return win;
 }
 
 void Interface::fix_pane_sizes(){
     if (chat.win != nullptr){
-        free(chat.win);
+        delwin(chat.win);
     }
     if (textbox.win != nullptr){
-        free(textbox.win);
+        delwin(textbox.win);
     }
     if (online_users.win != nullptr){
-        free(online_users.win);
+        delwin(online_users.win);
     }
     // '3-quarters' layout
-    chat.height = 3*(LINES/4);
+    chat.height = 4*(LINES/5);
     chat.width = 3*(COLS/4);
     chat.posx = 0;
     chat.posy = 0;
@@ -57,9 +76,6 @@ void Interface::fix_pane_sizes(){
     chat.win = new_pane_window(chat);
     textbox.win = new_pane_window(textbox);
     online_users.win = new_pane_window(online_users);
-
-    draw_users_pane();
-    draw_chat_pane();
 }
 
 void entitle_pane(Pane pane, const char* title){
@@ -68,22 +84,33 @@ void entitle_pane(Pane pane, const char* title){
 }
 
 void Interface::draw_chat_pane(){
+    werase(chat.win);
     int line = chat.height-2;
-    entitle_pane(chat, "chat");
     for (int i=client->msgs.size()-1; i >= 1; i--){
         mvwaddstr(chat.win, line, 1,client->msgs[i].text.data());
         line--;
         if (line == 0) break;
     }
+    box(chat.win, 0, 0);
+    entitle_pane(chat, "chat");
     wrefresh(chat.win);
 }
 
+void Interface::draw_textbox_pane(){
+    werase(textbox.win);
+    mvwaddstr(textbox.win, 1, 1, typed.data());
+    box(textbox.win, 0, 0);
+    wrefresh(textbox.win);
+}
+
 void Interface::draw_users_pane(){
+    werase(online_users.win);
     int line = 1;
-    entitle_pane(online_users, "online_users");
     for (int i=0; i < client->users.size(); i++){
         mvwaddstr(online_users.win, line, 1, (client->users[i].nickname).data());
         line++;
     }
+    box(online_users.win, 0, 0);
+    entitle_pane(online_users, "online users");
     wrefresh(online_users.win);
 }

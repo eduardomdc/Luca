@@ -182,7 +182,7 @@ void Client::read_msg(char buffer[], in_addr addr){
                 msg.text = lookup.user.nickname + ": " + (buffer+sizeof(Header));
                 msg.time = std::chrono::system_clock::now();
                 msgs.push_back(msg);
-                interface->draw_chat_pane();
+                //interface->draw_chat_pane();
                 break;
             }
         case GREET:
@@ -196,7 +196,7 @@ void Client::read_msg(char buffer[], in_addr addr){
                     msg.text = lookup.user.nickname + " joined the chat.";
                     msg.time = std::chrono::system_clock::now();
                     msgs.push_back(msg);
-                    interface->draw_chat_pane();
+                    //interface->draw_chat_pane();
                 }
             }
             break;
@@ -205,6 +205,7 @@ void Client::read_msg(char buffer[], in_addr addr){
             if (!yourself){
                 if (!lookup.found){
                     lookup.user = this->add_user(buffer, addr);
+                    //interface->draw_users_pane();
                 }
             }
             break;
@@ -216,7 +217,7 @@ void Client::read_msg(char buffer[], in_addr addr){
                     msg.text = lookup.user.nickname + " left.";
                     msg.time = std::chrono::system_clock::now();
                     msgs.push_back(msg);
-                    interface->draw_chat_pane();
+                    //interface->draw_chat_pane();
                 }
             }
             break;
