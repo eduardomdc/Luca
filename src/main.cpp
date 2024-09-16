@@ -13,11 +13,7 @@
 Client* client = nullptr;
 
 void handle_sigint(int signal){
-    if (client != nullptr){
-        client->farewell();
-    }
-    endwin();
-    std::exit(signal);
+    return; // only exit with F1
 }
 
 int main(int argc, char** argv){
@@ -35,7 +31,7 @@ int main(int argc, char** argv){
         std::signal(SIGINT, handle_sigint);
         std::thread twait(&Client::wait_for_msgs, &client);
         int i = 0;
-        while (true){
+        while (interface.is_running){
             interface.handle_input();
             interface.render();
         }

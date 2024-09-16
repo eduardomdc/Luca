@@ -18,6 +18,7 @@ Interface::Interface(){
         setup_colors();
     }
     fix_pane_sizes();
+    is_running = true;
 }
 
 void Interface::setup_colors(){
@@ -47,6 +48,8 @@ void Interface::handle_input(){
         send_typed();
     } else if (ch == KEY_BACKSPACE){
         backspace_typed();
+    } else if (ch == KEY_F(1)){
+        is_running = false;
     }
 }
 
@@ -118,7 +121,8 @@ void Interface::draw_chat_pane(){
         if (line-1 < 0) break;
     }
     box(chat.win, 0, 0);
-    entitle_pane(chat, "chat");
+    entitle_pane(chat, "|Round Table|");
+    mvwaddstr(chat.win, 0, 1, "F1 to quit");
     wrefresh(chat.win);
 }
 

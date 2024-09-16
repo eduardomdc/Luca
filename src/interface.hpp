@@ -24,6 +24,7 @@ public:
     void handle_input();
     void setup_colors();
     Client* client;
+    bool is_running;
 private:
     Pane chat;
     Pane textbox;
