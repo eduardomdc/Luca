@@ -137,7 +137,7 @@ void Client::farewell(){
 
 Lookup Client::lookup_user(in_addr addr){
     Lookup lookup;
-    for (int i=0; i < this->users.size(); i++){
+    for (unsigned int i=0; i < this->users.size(); i++){
         long it = users[i].addr.s_addr;
         if (addr.s_addr == it){
             return {true, users[i]};

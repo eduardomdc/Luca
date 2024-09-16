@@ -9,6 +9,7 @@ set(MY_SOURCES
     ../src/client.cpp
     ../src/interface.cpp
 )
+set_source_files_properties(${MY_SOURCES} PROPERTIES COMPILE_OPTIONS -Wall)
 
 add_executable(chat ${MY_SOURCES})
 

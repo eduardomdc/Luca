@@ -142,7 +142,7 @@ void Interface::draw_textbox_pane(){
 void Interface::draw_users_pane(){
     werase(online_users.win);
     int line = 0;
-    for (int i=0; i < client->users.size(); i++){
+    for (unsigned int i=0; i < client->users.size(); i++){
         wattron(online_users.textwin,COLOR_PAIR(client->users[i].color));
         mvwaddstr(online_users.textwin, line, 0, (client->users[i].nickname).data());
         wattroff(online_users.textwin,COLOR_PAIR(client->users[i].color));

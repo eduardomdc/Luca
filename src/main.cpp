@@ -30,7 +30,6 @@ int main(int argc, char** argv){
         client.interface = &interface;
         std::signal(SIGINT, handle_sigint);
         std::thread twait(&Client::wait_for_msgs, &client);
-        int i = 0;
         while (interface.is_running){
             interface.handle_input();
             interface.render();
