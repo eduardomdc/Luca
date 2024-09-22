@@ -4,6 +4,8 @@
 #include <string>
 #include <stdlib.h>
 
+#define PORT 8000
+
 Interface::Interface(){
     initscr();
     cbreak();
@@ -19,6 +21,8 @@ Interface::Interface(){
     }
     fix_pane_sizes();
     is_running = true;
+    login_screen = true;
+    nickname_chosen = false;
 }
 
 void Interface::setup_colors(){
@@ -35,21 +39,94 @@ void Interface::setup_colors(){
 }
 
 void Interface::render(){
-    draw_users_pane();
-    draw_chat_pane();
-    draw_textbox_pane();
+    if (login_screen){
+        draw_login_screen();
+    } else {
+        draw_users_pane();
+        draw_chat_pane();
+        draw_textbox_pane();
+    }
+}
+
+void Interface::exit(){
+    twait.detach();
+    client->farewell();
+}
+
+void Interface::leave_login(){
+    login_screen = false;
+    client = new Client(PORT, nickname, color_chosen);
+    twait = std::thread(&Client::wait_for_msgs, client);
 }
 
 void Interface::handle_input(){
-    int ch = getch();
-    if (ch >= 32 && ch <= 126){
-        type(ch);
-    } else if (ch == '\n' && typed.size() > 0){
-        send_typed();
-    } else if (ch == KEY_BACKSPACE){
-        backspace_typed();
-    } else if (ch == KEY_F(1)){
-        is_running = false;
+
+    // user inputs his nickname
+    if (login_screen && !nickname_chosen){
+        int ch = getch();
+        if (ch >= 32 && ch <= 126){
+            type(ch);
+        } else if (ch == '\n' && typed.size() > 0){
+            nickname = typed;
+            nickname_chosen = true;
+            typed.clear();
+        } else if (ch == KEY_BACKSPACE){
+            backspace_typed();
+        } else if (ch == KEY_END){
+            is_running = false;
+        }
+    }
+
+    // user chooses colour
+    if (login_screen && nickname_chosen){
+        int ch = getch();
+        switch (ch) {
+            case 'r':
+                color_chosen = RED;
+                leave_login();
+                break;
+            case 'g':
+                color_chosen = GREEN;
+                leave_login();
+                break;
+            case 'y':
+                color_chosen = YELLOW;
+                leave_login();
+                break;
+            case 'b':
+                color_chosen = BLUE;
+                leave_login();
+                break;
+            case 'm':
+                color_chosen = MAGENTA;
+                leave_login();
+                break;
+            case 'c':
+                color_chosen = CYAN;
+                leave_login();
+                break;
+            case 'w':
+                color_chosen = WHITE;
+                leave_login();
+                break;
+        }
+        if (ch == KEY_END){
+            is_running = false;
+        }
+    }
+
+    // chat input handling
+    if (!login_screen){
+        int ch = getch();
+        if (ch >= 32 && ch <= 126){
+            type(ch);
+        } else if (ch == '\n' && typed.size() > 0){
+            send_typed();
+        } else if (ch == KEY_BACKSPACE){
+            backspace_typed();
+        } else if (ch == KEY_END){
+            is_running = false;
+        }
     }
 }
 
@@ -107,6 +184,37 @@ void entitle_pane(Pane pane, const char* title){
     mvwaddstr(pane.win, 0, (pane.width-titlestr.length())/2, titlestr.data());
 }
 
+void Interface::draw_login_screen(){
+    erase();
+    if (!nickname_chosen){
+        mvaddstr(3*LINES/4, 2, "Nickname: ");
+        mvaddstr(3*LINES/4, 12, typed.data());
+    } else {
+        mvaddstr(3*LINES/4+1, 2, "Choose your color");
+        attron(COLOR_PAIR(RED));
+        mvaddstr(3*LINES/4+2, 2, "r Red ");
+        attroff(COLOR_PAIR(RED));
+        attron(COLOR_PAIR(GREEN));
+        addstr("g Green ");
+        attroff(COLOR_PAIR(GREEN));
+        attron(COLOR_PAIR(YELLOW));
+        addstr("y Yellow ");
+        attroff(COLOR_PAIR(YELLOW));
+        attron(COLOR_PAIR(BLUE));
+        addstr("b Blue ");
+        attroff(COLOR_PAIR(BLUE));
+        attron(COLOR_PAIR(MAGENTA));
+        addstr("m Magenta ");
+        attroff(COLOR_PAIR(MAGENTA));
+        attron(COLOR_PAIR(CYAN));
+        addstr("c Cyan ");
+        attroff(COLOR_PAIR(CYAN));
+        attron(COLOR_PAIR(WHITE));
+        addstr("w White ");
+        attroff(COLOR_PAIR(WHITE));
+    }
+}
+
 void Interface::draw_chat_pane(){
     werase(chat.win);
     int line = chat.height-2;
@@ -121,8 +229,7 @@ void Interface::draw_chat_pane(){
         if (line-1 < 0) break;
     }
     box(chat.win, 0, 0);
-    entitle_pane(chat, "|Round Table|");
-    mvwaddstr(chat.win, 0, 1, "F1 to quit");
+    mvwaddstr(chat.win, 0, 1, "END to quit");
     wrefresh(chat.win);
 }
 
@@ -149,6 +256,6 @@ void Interface::draw_users_pane(){
         line++;
     }
     box(online_users.win, 0, 0);
-    entitle_pane(online_users, "online users");
+    entitle_pane(online_users, "online");
     wrefresh(online_users.win);
 }
