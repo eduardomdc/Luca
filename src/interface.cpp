@@ -184,15 +184,35 @@ void entitle_pane(Pane pane, const char* title){
     mvwaddstr(pane.win, 0, (pane.width-titlestr.length())/2, titlestr.data());
 }
 
+const char* title[8] = {
+    
+" ___                               ",
+"/\\_ \\                              ",
+"\\//\\ \\    __  __    ___     __     ",
+  "  \\ \\ \\  /\\ \\/\\ \\  /'___\\ /'__`\\   ",
+   "   \\_\\ \\_\\ \\ \\_\\ \\/\\ \\__//\\ \\L\\.\\_ ",
+   "   /\\____\\\\ \\____/\\ \\____\\ \\__/.\\_\\",
+   "   \\/____/ \\/___/  \\/____/\\/__/\\/_/",
+        "v0.2   Local UDP Chat Alternative",
+};
+
 void Interface::draw_login_screen(){
     erase();
+    // draw title
+    int title_size = sizeof(title)/sizeof(title[0]);
+    for (int i=0; i<title_size; i++){
+        mvaddstr(i, 2, title[i]);
+    }
+
     if (!nickname_chosen){
-        mvaddstr(3*LINES/4, 2, "Nickname: ");
-        mvaddstr(3*LINES/4, 12, typed.data());
+        mvaddstr(title_size+1, 2, "Nickname: ");
+        attron(COLOR_PAIR(TOOLTIP));
+        mvaddstr(title_size+1, 12, typed.data());
+        attroff(COLOR_PAIR(TOOLTIP));
     } else {
-        mvaddstr(3*LINES/4+1, 2, "Choose your color");
+        mvaddstr(title_size+1, 2, "Choose your color");
         attron(COLOR_PAIR(RED));
-        mvaddstr(3*LINES/4+2, 2, "r Red ");
+        mvaddstr(title_size+2, 2, "r Red ");
         attroff(COLOR_PAIR(RED));
         attron(COLOR_PAIR(GREEN));
         addstr("g Green ");
@@ -204,7 +224,7 @@ void Interface::draw_login_screen(){
         addstr("b Blue ");
         attroff(COLOR_PAIR(BLUE));
         attron(COLOR_PAIR(MAGENTA));
-        addstr("m Magenta ");
+        mvaddstr(title_size+3, 2, "m Magenta ");
         attroff(COLOR_PAIR(MAGENTA));
         attron(COLOR_PAIR(CYAN));
         addstr("c Cyan ");
