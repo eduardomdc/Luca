@@ -4,3 +4,4 @@ build/
 !*.cpp
 !*.hpp
 !CMakeLists.txt
+!README.md
